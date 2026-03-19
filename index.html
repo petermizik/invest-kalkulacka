@@ -6,6 +6,8 @@
     <title>Investiční kalkulačka nemovitosti</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Přidána knihovna pro export do PNG -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         input[type=range] { accent-color: #3b82f6; }
         ::-webkit-scrollbar { width: 8px; }
@@ -16,9 +18,16 @@
 <body class="bg-slate-50 text-slate-800 font-sans min-h-screen">
 
     <div class="max-w-7xl mx-auto px-4 py-8">
-        <header class="mb-8">
-            <h1 class="text-3xl font-bold text-slate-900">Interaktivní plán: Investice do bytu (Pro)</h1>
-            <p class="text-slate-500 mt-2">Pokročilá analýza s vlivem daní, odpisů, amortizace dluhu a refinancování.</p>
+        <header class="mb-8 flex flex-col md:flex-row md:justify-between md:items-end gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-slate-900">Interaktivní plán: Investice do bytu (Pro)</h1>
+                <p class="text-slate-500 mt-2">Pokročilá analýza s vlivem daní, odpisů, amortizace dluhu a refinancování.</p>
+            </div>
+            <!-- Nové tlačítko pro stažení PNG -->
+            <button id="downloadBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-5 rounded-lg shadow-sm transition duration-150 flex items-center justify-center gap-2">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                <span>Stáhnout grafy jako PNG</span>
+            </button>
         </header>
 
         <div class="grid grid-cols-1 xl:grid-cols-12 gap-8">
@@ -34,10 +43,11 @@
                         <div>
                             <div class="flex justify-between mb-1">
                                 <label class="text-sm font-medium text-slate-700">Kupní cena bytu</label>
-                                <span id="priceDisplay" class="text-sm font-bold text-blue-600">9 270 000 Kč</span>
+                                <!-- Upravená výchozí cena na 8.7M -->
+                                <span id="priceDisplay" class="text-sm font-bold text-blue-600">8 700 000 Kč</span>
                             </div>
-                            <input type="range" id="priceRange" min="7000000" max="9270000" step="10000" value="9270000" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
-                            <input type="number" id="priceInput" value="9270000" class="mt-2 w-full p-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                            <input type="range" id="priceRange" min="7000000" max="9270000" step="10000" value="8700000" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
+                            <input type="number" id="priceInput" value="8700000" class="mt-2 w-full p-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
                         </div>
 
                         <div class="grid grid-cols-2 gap-4">
@@ -85,7 +95,8 @@
                             <div>
                                 <label class="block text-xs font-medium text-blue-800 mb-1">Oček. úrok po fixaci</label>
                                 <div class="relative">
-                                    <input type="number" id="rateAfterInput" value="4.0" step="0.1" class="w-full p-1.5 border border-blue-200 rounded text-sm bg-white outline-none">
+                                    <!-- Upravený výchozí úrok po fixaci na 4.6 -->
+                                    <input type="number" id="rateAfterInput" value="4.6" step="0.1" class="w-full p-1.5 border border-blue-200 rounded text-sm bg-white outline-none">
                                     <span class="absolute right-2 top-1.5 text-slate-400 text-xs">%</span>
                                 </div>
                             </div>
@@ -154,7 +165,8 @@
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">Růst nákladů SVJ (p.a.)</label>
                                 <div class="relative">
-                                    <input type="number" id="costsInflationInput" value="2.5" step="0.1" class="w-full p-1.5 border border-slate-300 rounded text-sm outline-none">
+                                    <!-- Upravený růst nákladů SVJ na 1.5 -->
+                                    <input type="number" id="costsInflationInput" value="1.5" step="0.1" class="w-full p-1.5 border border-slate-300 rounded text-sm outline-none">
                                     <span class="absolute right-2 top-1.5 text-slate-400 text-xs">%</span>
                                 </div>
                             </div>
@@ -168,7 +180,8 @@
                             <div>
                                 <label class="block text-xs font-medium text-slate-700 mb-1">Obecná inflace (p.a.)</label>
                                 <div class="relative" title="Slouží pro výpočet reálné hodnoty peněz v grafu">
-                                    <input type="number" id="generalInflationInput" value="2.0" step="0.1" class="w-full p-1.5 border border-slate-300 rounded text-sm outline-none">
+                                    <!-- Upravená inflace na 2.5 -->
+                                    <input type="number" id="generalInflationInput" value="2.5" step="0.1" class="w-full p-1.5 border border-slate-300 rounded text-sm outline-none">
                                     <span class="absolute right-2 top-1.5 text-slate-400 text-xs">%</span>
                                 </div>
                             </div>
@@ -178,8 +191,8 @@
                 </div>
             </div>
 
-            <!-- Pravý panel: Výsledky a grafy -->
-            <div class="xl:col-span-8 space-y-6">
+            <!-- Pravý panel: Výsledky a grafy (Přidáno ID pro export) -->
+            <div id="resultsPanel" class="xl:col-span-8 space-y-6">
                 
                 <!-- KPI Karty -->
                 <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
@@ -208,13 +221,13 @@
                     </div>
                 </div>
 
-                <!-- Graf 3: Rozklad Cash Flow (NOVÝ GRAF) -->
+                <!-- Graf 3: Rozklad Cash Flow -->
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
                     <div class="flex justify-between items-center mb-1">
                         <h3 class="text-lg font-semibold text-slate-800">Struktura měsíčních příjmů a výdajů (Daňový štít)</h3>
                     </div>
                     <p class="text-xs text-slate-500 mb-4">Sloupce ukazují reálné toky peněz. Přerušovaná čára jsou uplatněné odpisy a úroky z hypotéky snižují vaši daňovou zátěž.</p>
-                    <div class="relative h-72 w-full">
+                    <div class="relative h-72 w-full bg-white">
                         <canvas id="breakdownChart"></canvas>
                     </div>
                 </div>
@@ -224,10 +237,10 @@
                     <div class="flex justify-between items-center mb-4">
                         <div>
                             <h3 class="text-lg font-semibold text-slate-800">Čisté jmění a vývoj dluhu</h3>
-                            <p class="text-xs text-slate-500">Hodnota očištěná o dluh ukazuje tvorbu tvého skutečného bohatství.</p>
+                            <p class="text-xs text-slate-500">Hodnota očištěná o dlh ukazuje tvorbu tvého skutečného bohatství.</p>
                         </div>
                     </div>
-                    <div class="relative h-64 w-full">
+                    <div class="relative h-64 w-full bg-white">
                         <canvas id="valueChart"></canvas>
                     </div>
                 </div>
@@ -236,7 +249,7 @@
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
                     <h3 class="text-lg font-semibold text-slate-800 mb-1">Vývoj Cash Flow a Cash on Cash (CoC)</h3>
                     <p class="text-xs text-slate-500 mb-4">Sloupce ukazují průměrné měsíční Cash Flow (levá osa). Křivka ukazuje roční CoC návratnost v % (pravá osa).</p>
-                    <div class="relative h-60 w-full">
+                    <div class="relative h-60 w-full bg-white">
                         <canvas id="cashflowChart"></canvas>
                     </div>
                 </div>
@@ -543,7 +556,6 @@
                 });
             }
 
-
             // ==========================================
             // GRAF 1: HODNOTA A DLUH
             // ==========================================
@@ -698,6 +710,38 @@
             }
         }
 
+        // --- Logika pro export do PNG ---
+        document.getElementById('downloadBtn').addEventListener('click', function() {
+            const btn = this;
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = '<span class="animate-pulse">⏳ Generuji...</span>';
+            btn.disabled = true;
+
+            // Chceme uložit kompletní pravý panel (s parametry KPI i grafy)
+            const target = document.getElementById('resultsPanel');
+            
+            // Konfigurace html2canvas
+            html2canvas(target, { 
+                scale: 2, // 2x zvětšení pro ostré grafy a text (retina kvalita)
+                backgroundColor: '#f8fafc', // Barva pozadí (bg-slate-50), aby pozadí nebylo průhledné
+                logging: false
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'analyza_investice.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                
+                // Vrácení tlačítka do původního stavu
+                btn.innerHTML = originalContent;
+                btn.disabled = false;
+            }).catch(err => {
+                console.error("Chyba při generování obrázku:", err);
+                btn.innerHTML = '❌ Došlo k chybě';
+                setTimeout(() => { btn.innerHTML = originalContent; btn.disabled = false; }, 3000);
+            });
+        });
+
+        // Úvodní výpočet při načtení
         calculate();
     </script>
 </body>
