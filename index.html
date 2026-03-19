@@ -18,7 +18,7 @@
     <div class="max-w-7xl mx-auto px-4 py-8">
         <header class="mb-8">
             <h1 class="text-3xl font-bold text-slate-900">Interaktivní plán: Investice do bytu (Pro)</h1>
-            <p class="text-slate-500 mt-2">Pokročilá analýza s vlivem daní, amortizace dluhu a refinancování.</p>
+            <p class="text-slate-500 mt-2">Pokročilá analýza s vlivem daní, odpisů, amortizace dluhu a refinancování.</p>
         </header>
 
         <div class="grid grid-cols-1 xl:grid-cols-12 gap-8">
@@ -123,11 +123,20 @@
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-slate-700 mb-1">Daň z příjmu</label>
-                                <div class="relative" title="Sazba daně aplikovaná na (Nájem - Náklady - Úroky z hypotéky)">
+                                <div class="relative" title="Sazba daně aplikovaná na zisk z pronájmu po odečtení výdajů, úroků a odpisů">
                                     <input type="number" id="taxRateInput" value="23.0" step="1" class="w-full p-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
                                     <span class="absolute right-3 top-2 text-slate-400 text-sm">%</span>
                                 </div>
                             </div>
+                        </div>
+                        
+                        <div class="bg-emerald-50 p-3 rounded-lg border border-emerald-100">
+                            <label class="block text-sm font-medium text-emerald-800 mb-1">Podíl stavby na ceně (pro odpisy)</label>
+                            <div class="relative" title="Pozemek nelze odpisovat. Určete podíl hodnoty samotné stavby (zpravidla 70-85%).">
+                                <input type="number" id="buildingRatioInput" value="80" step="1" class="w-full p-2 border border-emerald-200 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none bg-white">
+                                <span class="absolute right-3 top-2 text-slate-400 text-sm">%</span>
+                            </div>
+                            <p class="text-[10px] text-emerald-600 mt-1 leading-tight">Odpisy dle zákona (skupina 5): 1. rok = 1,4 %, další roky = 3,4 %. Aplikuje se po dobu 30 let.</p>
                         </div>
                     </div>
 
@@ -199,15 +208,26 @@
                     </div>
                 </div>
 
+                <!-- Graf 3: Rozklad Cash Flow (NOVÝ GRAF) -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex justify-between items-center mb-1">
+                        <h3 class="text-lg font-semibold text-slate-800">Struktura měsíčních příjmů a výdajů (Daňový štít)</h3>
+                    </div>
+                    <p class="text-xs text-slate-500 mb-4">Sloupce ukazují reálné toky peněz. Přerušovaná čára jsou uplatněné odpisy a úroky z hypotéky snižují vaši daňovou zátěž.</p>
+                    <div class="relative h-72 w-full">
+                        <canvas id="breakdownChart"></canvas>
+                    </div>
+                </div>
+
                 <!-- Graf 1: Hodnota nemovitosti a dlh -->
                 <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
                     <div class="flex justify-between items-center mb-4">
                         <div>
-                            <h3 class="text-lg font-semibold text-slate-800">Čisté jmění a vývoj dlhu</h3>
-                            <p class="text-xs text-slate-500">Hodnota očištěná o dlh ukazuje tvorbu tvého skutečného bohatství.</p>
+                            <h3 class="text-lg font-semibold text-slate-800">Čisté jmění a vývoj dluhu</h3>
+                            <p class="text-xs text-slate-500">Hodnota očištěná o dluh ukazuje tvorbu tvého skutečného bohatství.</p>
                         </div>
                     </div>
-                    <div class="relative h-72 w-full">
+                    <div class="relative h-64 w-full">
                         <canvas id="valueChart"></canvas>
                     </div>
                 </div>
@@ -234,7 +254,7 @@
             rate: document.getElementById('rateInput'), years: document.getElementById('yearsInput'),
             fixationYears: document.getElementById('fixationYearsInput'), rateAfter: document.getElementById('rateAfterInput'),
             rent: document.getElementById('rentInput'), costs: document.getElementById('costsInput'),
-            vacancy: document.getElementById('vacancyInput'), taxRate: document.getElementById('taxRateInput'),
+            vacancy: document.getElementById('vacancyInput'), taxRate: document.getElementById('taxRateInput'), buildingRatio: document.getElementById('buildingRatioInput'),
             rentInflation: document.getElementById('rentInflationInput'), costsInflation: document.getElementById('costsInflationInput'),
             valueGrowth: document.getElementById('valueGrowthInput'), generalInflation: document.getElementById('generalInflationInput')
         };
@@ -247,6 +267,7 @@
 
         let valueChartInstance = null;
         let cfChartInstance = null;
+        let breakdownChartInstance = null;
 
         inputs.priceRange.addEventListener('input', (e) => { inputs.priceInput.value = e.target.value; calculate(); });
         inputs.priceInput.addEventListener('input', (e) => { inputs.priceRange.value = e.target.value; calculate(); });
@@ -274,6 +295,7 @@
             const initialPropCosts = parseFloat(inputs.costs.value) || 0;
             const vacancyRate = parseFloat(inputs.vacancy.value) || 0;
             const taxRate = parseFloat(inputs.taxRate.value) || 0;
+            const buildingRatio = parseFloat(inputs.buildingRatio.value) || 0; // Podíl stavby (např. 80%)
             
             const rentInf = parseFloat(inputs.rentInflation.value) || 0;
             const costsInf = parseFloat(inputs.costsInflation.value) || 0;
@@ -297,23 +319,23 @@
             outputs.monthlyPayment.textContent = formatter.format(currentPayment);
             
             const labels = [];
-            const valNominalData = [];
-            const valRealData = [];
-            const mortgageData = [];
-            const equityData = [];
-            const cfData = [];
-            const cocData = [];
+            
+            // Graf 1 a 2
+            const valNominalData = []; const valRealData = []; const mortgageData = []; const equityData = [];
+            const cfData = []; const cocData = [];
+            
+            // Graf 3 (Rozklad) - Průměrná měsíční data za daný rok
+            const breakdownData = {
+                rent: [], opCosts: [], interest: [], principal: [], tax: [], depreciation: [], netCf: []
+            };
 
             let breakEvenYear = null;
             let firstYearCF = 0;
 
             labels.push('Dnes');
-            valNominalData.push(price / 1000000);
-            valRealData.push(price / 1000000);
-            mortgageData.push(balance / 1000000);
-            equityData.push((price - balance) / 1000000);
-            cfData.push(0); 
-            cocData.push(0);
+            valNominalData.push(price / 1000000); valRealData.push(price / 1000000);
+            mortgageData.push(balance / 1000000); equityData.push((price - balance) / 1000000);
+            cfData.push(0); cocData.push(0);
 
             for (let y = 1; y <= totalYears; y++) {
                 labels.push(`Rok ${y}`);
@@ -349,8 +371,16 @@
                 let yearlyRent = (initialRent * 12) * Math.pow(1 + (rentInf / 100), y - 1);
                 let effectiveYearlyRent = yearlyRent * (1 - (vacancyRate / 100));
                 let yearlyPropCosts = (initialPropCosts * 12) * Math.pow(1 + (costsInf / 100), y - 1);
+                
+                // Výpočet odpisů dle ČR zákona (Skupina 5: 30 let. 1. rok = 1,4 %, další = 3,4 %)
+                let yearlyDepreciation = 0;
+                if (y === 1) {
+                    yearlyDepreciation = price * (buildingRatio / 100) * 0.014;
+                } else if (y <= 30) {
+                    yearlyDepreciation = price * (buildingRatio / 100) * 0.034;
+                }
 
-                let taxableIncome = effectiveYearlyRent - yearlyPropCosts - yearlyInterest;
+                let taxableIncome = effectiveYearlyRent - yearlyPropCosts - yearlyInterest - yearlyDepreciation;
                 let tax = 0;
                 if (taxableIncome > 0) {
                     tax = taxableIncome * (taxRate / 100);
@@ -363,6 +393,15 @@
 
                 cfData.push(monthlyCF);
                 cocData.push(yearlyCoC);
+                
+                // Uložení průměrných měsíčních hodnot pro 3. graf
+                breakdownData.rent.push(effectiveYearlyRent / 12);
+                breakdownData.opCosts.push(-yearlyPropCosts / 12);
+                breakdownData.interest.push(-yearlyInterest / 12);
+                breakdownData.principal.push(-yearlyPrincipal / 12);
+                breakdownData.tax.push(-tax / 12);
+                breakdownData.depreciation.push(-yearlyDepreciation / 12); // Záporně pro grafické srovnání s výdaji
+                breakdownData.netCf.push(monthlyCF);
 
                 if (y === 1) {
                     firstYearCF = monthlyCF;
@@ -399,12 +438,115 @@
 
             if(fixationYears >= totalYears) outputs.paymentAfter.textContent = "Fixace po celou dobu";
 
-            updateCharts(labels, valNominalData, valRealData, mortgageData, equityData, cfData, cocData);
+            updateCharts(labels, valNominalData, valRealData, mortgageData, equityData, cfData, cocData, breakdownData);
         }
 
-        function updateCharts(labels, valNominal, valReal, mortgage, equity, cfData, cocData) {
+        function updateCharts(labels, valNominal, valReal, mortgage, equity, cfData, cocData, breakdownData) {
             const chartOptions = { responsive: true, maintainAspectRatio: false };
+            const cfLabels = labels.slice(1); // Oříznutí "Dnes"
 
+            // ==========================================
+            // GRAF 3: ROZKLAD CASH FLOW A DANÍ
+            // ==========================================
+            const ctxBreakdown = document.getElementById('breakdownChart').getContext('2d');
+            if (breakdownChartInstance) {
+                breakdownChartInstance.data.labels = cfLabels;
+                breakdownChartInstance.data.datasets[0].data = [...breakdownData.netCf];
+                breakdownChartInstance.data.datasets[1].data = [...breakdownData.rent];
+                breakdownChartInstance.data.datasets[2].data = [...breakdownData.opCosts];
+                breakdownChartInstance.data.datasets[3].data = [...breakdownData.interest];
+                breakdownChartInstance.data.datasets[4].data = [...breakdownData.principal];
+                breakdownChartInstance.data.datasets[5].data = [...breakdownData.tax];
+                breakdownChartInstance.data.datasets[6].data = [...breakdownData.depreciation];
+                breakdownChartInstance.update('none');
+            } else {
+                breakdownChartInstance = new Chart(ctxBreakdown, {
+                    type: 'bar',
+                    data: {
+                        labels: cfLabels,
+                        datasets: [
+                            {
+                                type: 'line',
+                                label: 'Čisté Cash Flow',
+                                data: breakdownData.netCf,
+                                borderColor: '#0f172a',
+                                borderWidth: 2,
+                                pointRadius: 2,
+                                fill: false,
+                                order: 0
+                            },
+                            {
+                                label: 'Příjem z nájmu',
+                                data: breakdownData.rent,
+                                backgroundColor: '#10b981', // Zelená
+                                stack: 'Stack 0',
+                                order: 2
+                            },
+                            {
+                                label: 'Provozní náklady',
+                                data: breakdownData.opCosts,
+                                backgroundColor: '#ef4444', // Červená
+                                stack: 'Stack 0',
+                                order: 2
+                            },
+                            {
+                                label: 'Úroky hypotéky',
+                                data: breakdownData.interest,
+                                backgroundColor: '#f97316', // Oranžová
+                                stack: 'Stack 0',
+                                order: 2
+                            },
+                            {
+                                label: 'Splátka jistiny',
+                                data: breakdownData.principal,
+                                backgroundColor: '#eab308', // Žlutá
+                                stack: 'Stack 0',
+                                order: 2
+                            },
+                            {
+                                label: 'Daň z příjmu',
+                                data: breakdownData.tax,
+                                backgroundColor: '#8b5cf6', // Fialová
+                                stack: 'Stack 0',
+                                order: 2
+                            },
+                            {
+                                type: 'line',
+                                label: 'Daňový odpis stavby (Úleva)',
+                                data: breakdownData.depreciation,
+                                borderColor: '#3b82f6',
+                                backgroundColor: 'transparent',
+                                borderDash: [5, 5],
+                                borderWidth: 2,
+                                pointRadius: 0,
+                                tension: 0.1,
+                                order: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        ...chartOptions,
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: {
+                            legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, font: {size: 11} } },
+                            tooltip: { callbacks: { label: function(c) { return c.dataset.label + ': ' + formatter.format(c.parsed.y); } } }
+                        },
+                        scales: {
+                            x: { stacked: true, ticks: { maxTicksLimit: 10 } },
+                            y: { 
+                                stacked: true, 
+                                grid: { color: (c) => c.tick.value === 0 ? '#64748b' : '#e2e8f0', lineWidth: (c) => c.tick.value === 0 ? 2 : 1 },
+                                ticks: { callback: function(val) { return val + ' Kč'; } }
+                            }
+                        }
+                    }
+                });
+            }
+
+
+            // ==========================================
+            // GRAF 1: HODNOTA A DLUH
+            // ==========================================
             const ctxValue = document.getElementById('valueChart').getContext('2d');
             if (valueChartInstance) {
                 valueChartInstance.data.labels = labels;
@@ -477,7 +619,9 @@
                 });
             }
 
-            const cfLabels = labels.slice(1);
+            // ==========================================
+            // GRAF 2: CASH FLOW & CoC
+            // ==========================================
             const cfValues = cfData.slice(1);
             const cocValues = cocData.slice(1);
 
