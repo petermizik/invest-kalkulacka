@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Investiční kalkulačka nemovitosti</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        input[type=range] { accent-color: #3b82f6; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen">
+
+    <div class="max-w-7xl mx-auto px-4 py-8">
+        <header class="mb-8">
+            <h1 class="text-3xl font-bold text-slate-900">Interaktivní plán: Investice do bytu (Pro)</h1>
+            <p class="text-slate-500 mt-2">Pokročilá analýza s vlivem daní, amortizace dluhu a refinancování.</p>
+        </header>
+
+        <div class="grid grid-cols-1 xl:grid-cols-12 gap-8">
+            
+            <!-- Levý panel: Vstupy -->
+            <div class="xl:col-span-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 h-fit max-h-[90vh] overflow-y-auto">
+                <h2 class="text-xl font-semibold mb-6 text-slate-800 border-b pb-2">Parametry investice</h2>
+                
+                <div class="space-y-6">
+                    <!-- Sekce 1: Cena a financování -->
+                    <div class="space-y-4">
+                        <h3 class="text-sm font-bold text-blue-600 uppercase tracking-wider">1. Pořízení a úvěr</h3>
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <label class="text-sm font-medium text-slate-700">Kupní cena bytu</label>
+                                <span id="priceDisplay" class="text-sm font-bold text-blue-600">9 270 000 Kč</span>
+                            </div>
+                            <input type="range" id="priceRange" min="7000000" max="9270000" step="10000" value="9270000" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer">
+                            <input type="number" id="priceInput" value="9270000" class="mt-2 w-full p-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Vlastní zdroje</label>
+                                <div class="relative">
+                                    <input type="number" id="equityInput" value="2200000" step="50000" class="w-full p-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                                    <span class="absolute right-3 top-2 text-slate-400 text-sm">Kč</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Výbava/Poplatky</label>
+                                <div class="relative" title="Další počáteční náklady na rekonstrukci, vybavení, provize atd.">
+                                    <input type="number" id="initCostsInput" value="200000" step="10000" class="w-full p-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                                    <span class="absolute right-3 top-2 text-slate-400 text-sm">Kč</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Splatnost hypotéky</label>
+                                <div class="relative">
+                                    <input type="number" id="yearsInput" value="30" step="1" class="w-full p-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                                    <span class="absolute right-3 top-2 text-slate-400 text-sm">let</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Úrok (nyní)</label>
+                                <div class="relative">
+                                    <input type="number" id="rateInput" value="4.6" step="0.1" class="w-full p-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                                    <span class="absolute right-3 top-2 text-slate-400 text-sm">%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                            <div>
+                                <label class="block text-xs font-medium text-blue-800 mb-1">Fixace končí za</label>
+                                <div class="relative">
+                                    <input type="number" id="fixationYearsInput" value="3" step="1" class="w-full p-1.5 border border-blue-200 rounded text-sm bg-white outline-none">
+                                    <span class="absolute right-2 top-1.5 text-slate-400 text-xs">let</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-blue-800 mb-1">Oček. úrok po fixaci</label>
+                                <div class="relative">
+                                    <input type="number" id="rateAfterInput" value="4.0" step="0.1" class="w-full p-1.5 border border-blue-200 rounded text-sm bg-white outline-none">
+                                    <span class="absolute right-2 top-1.5 text-slate-400 text-xs">%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sekce 2: Provoz a Daně -->
+                    <div class="space-y-4 border-t pt-4">
+                        <h3 class="text-sm font-bold text-emerald-600 uppercase tracking-wider">2. Provoz a Daně</h3>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Měsíční nájem</label>
+                                <div class="relative">
+                                    <input type="number" id="rentInput" value="25000" step="500" class="w-full p-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                                    <span class="absolute right-3 top-2 text-slate-400 text-sm">Kč</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Náklady (SVJ, daň)</label>
+                                <div class="relative">
+                                    <input type="number" id="costsInput" value="1600" step="100" class="w-full p-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                                    <span class="absolute right-3 top-2 text-slate-400 text-sm">Kč</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Neobsazenost</label>
+                                <div class="relative" title="Procento roku, kdy je byt prázdný">
+                                    <input type="number" id="vacancyInput" value="5.0" step="1" class="w-full p-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                                    <span class="absolute right-3 top-2 text-slate-400 text-sm">%</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-slate-700 mb-1">Daň z příjmu</label>
+                                <div class="relative" title="Sazba daně aplikovaná na (Nájem - Náklady - Úroky z hypotéky)">
+                                    <input type="number" id="taxRateInput" value="23.0" step="1" class="w-full p-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                                    <span class="absolute right-3 top-2 text-slate-400 text-sm">%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sekce 3: Makroekonomika -->
+                    <div class="space-y-4 border-t pt-4">
+                        <h3 class="text-sm font-bold text-purple-600 uppercase tracking-wider">3. Růst v čase (Inflace)</h3>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">Růst nájmu (p.a.)</label>
+                                <div class="relative">
+                                    <input type="number" id="rentInflationInput" value="2.5" step="0.1" class="w-full p-1.5 border border-slate-300 rounded text-sm outline-none">
+                                    <span class="absolute right-2 top-1.5 text-slate-400 text-xs">%</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">Růst nákladů SVJ (p.a.)</label>
+                                <div class="relative">
+                                    <input type="number" id="costsInflationInput" value="2.5" step="0.1" class="w-full p-1.5 border border-slate-300 rounded text-sm outline-none">
+                                    <span class="absolute right-2 top-1.5 text-slate-400 text-xs">%</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">Růst hodnoty bytu (p.a.)</label>
+                                <div class="relative">
+                                    <input type="number" id="valueGrowthInput" value="5.0" step="0.5" class="w-full p-1.5 border border-slate-300 rounded text-sm outline-none">
+                                    <span class="absolute right-2 top-1.5 text-slate-400 text-xs">%</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-slate-700 mb-1">Obecná inflace (p.a.)</label>
+                                <div class="relative" title="Slouží pro výpočet reálné hodnoty peněz v grafu">
+                                    <input type="number" id="generalInflationInput" value="2.0" step="0.1" class="w-full p-1.5 border border-slate-300 rounded text-sm outline-none">
+                                    <span class="absolute right-2 top-1.5 text-slate-400 text-xs">%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Pravý panel: Výsledky a grafy -->
+            <div class="xl:col-span-8 space-y-6">
+                
+                <!-- KPI Karty -->
+                <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-center">
+                        <p class="text-xs font-medium text-slate-500 mb-1">Hrubý výnos (Yield)</p>
+                        <p id="yieldOut" class="text-xl font-bold text-slate-800">0 %</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-center" title="Cash on Cash Return v 1. roce: Roční CF / Vložená hotovost">
+                        <p class="text-xs font-medium text-slate-500 mb-1">CoC (1. rok)</p>
+                        <p id="cocOut" class="text-xl font-bold text-slate-800">0 %</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-center">
+                        <p class="text-xs font-medium text-slate-500 mb-1">Vložená hotovost</p>
+                        <p id="totalCashOut" class="text-xl font-bold text-slate-800">0 Kč</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-center">
+                        <p class="text-xs font-medium text-slate-500 mb-1">Měsíční splátka</p>
+                        <p id="monthlyPaymentOut" class="text-xl font-bold text-slate-800">0 Kč</p>
+                        <p id="paymentAfterOut" class="text-[10px] text-blue-500 mt-1 font-medium">Po fixaci: 0 Kč</p>
+                    </div>
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 relative overflow-hidden flex flex-col justify-center">
+                        <div id="cfBg" class="absolute inset-0 opacity-10"></div>
+                        <p class="text-xs font-medium text-slate-500 mb-1 relative z-10">Měsíční CF</p>
+                        <p id="cashFlowOut" class="text-xl font-bold relative z-10">0 Kč</p>
+                        <p id="breakEvenOut" class="text-[10px] font-medium text-slate-600 mt-1 relative z-10">Zisk za: X let</p>
+                    </div>
+                </div>
+
+                <!-- Graf 1: Hodnota nemovitosti a dlh -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <div class="flex justify-between items-center mb-4">
+                        <div>
+                            <h3 class="text-lg font-semibold text-slate-800">Čisté jmění a vývoj dlhu</h3>
+                            <p class="text-xs text-slate-500">Hodnota očištěná o dlh ukazuje tvorbu tvého skutečného bohatství.</p>
+                        </div>
+                    </div>
+                    <div class="relative h-72 w-full">
+                        <canvas id="valueChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Graf 2: Cash Flow a CoC -->
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                    <h3 class="text-lg font-semibold text-slate-800 mb-1">Vývoj Cash Flow a Cash on Cash (CoC)</h3>
+                    <p class="text-xs text-slate-500 mb-4">Sloupce ukazují průměrné měsíční Cash Flow (levá osa). Křivka ukazuje roční CoC návratnost v % (pravá osa).</p>
+                    <div class="relative h-60 w-full">
+                        <canvas id="cashflowChart"></canvas>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const formatter = new Intl.NumberFormat('cs-CZ', { style: 'currency', currency: 'CZK', maximumFractionDigits: 0 });
+
+        const inputs = {
+            priceRange: document.getElementById('priceRange'), priceInput: document.getElementById('priceInput'), priceDisplay: document.getElementById('priceDisplay'),
+            equity: document.getElementById('equityInput'), initCosts: document.getElementById('initCostsInput'),
+            rate: document.getElementById('rateInput'), years: document.getElementById('yearsInput'),
+            fixationYears: document.getElementById('fixationYearsInput'), rateAfter: document.getElementById('rateAfterInput'),
+            rent: document.getElementById('rentInput'), costs: document.getElementById('costsInput'),
+            vacancy: document.getElementById('vacancyInput'), taxRate: document.getElementById('taxRateInput'),
+            rentInflation: document.getElementById('rentInflationInput'), costsInflation: document.getElementById('costsInflationInput'),
+            valueGrowth: document.getElementById('valueGrowthInput'), generalInflation: document.getElementById('generalInflationInput')
+        };
+
+        const outputs = {
+            yield: document.getElementById('yieldOut'), coc: document.getElementById('cocOut'), totalCash: document.getElementById('totalCashOut'),
+            monthlyPayment: document.getElementById('monthlyPaymentOut'), paymentAfter: document.getElementById('paymentAfterOut'),
+            cashFlow: document.getElementById('cashFlowOut'), breakEven: document.getElementById('breakEvenOut'), cfBg: document.getElementById('cfBg')
+        };
+
+        let valueChartInstance = null;
+        let cfChartInstance = null;
+
+        inputs.priceRange.addEventListener('input', (e) => { inputs.priceInput.value = e.target.value; calculate(); });
+        inputs.priceInput.addEventListener('input', (e) => { inputs.priceRange.value = e.target.value; calculate(); });
+        Object.values(inputs).forEach(input => {
+            if(input !== inputs.priceRange && input !== inputs.priceInput && input !== inputs.priceDisplay) {
+                input.addEventListener('input', calculate);
+            }
+        });
+
+        function pmt(rate, nper, pv) {
+            if (rate === 0) return pv / nper;
+            return pv * (rate * Math.pow(1 + rate, nper)) / (Math.pow(1 + rate, nper) - 1);
+        }
+
+        function calculate() {
+            const price = parseFloat(inputs.priceInput.value) || 0;
+            const equity = parseFloat(inputs.equity.value) || 0;
+            const initCosts = parseFloat(inputs.initCosts.value) || 0;
+            const initialRate = parseFloat(inputs.rate.value) || 0;
+            const totalYears = parseFloat(inputs.years.value) || 0;
+            const fixationYears = parseFloat(inputs.fixationYears.value) || 0;
+            const rateAfter = parseFloat(inputs.rateAfter.value) || 0;
+            
+            const initialRent = parseFloat(inputs.rent.value) || 0;
+            const initialPropCosts = parseFloat(inputs.costs.value) || 0;
+            const vacancyRate = parseFloat(inputs.vacancy.value) || 0;
+            const taxRate = parseFloat(inputs.taxRate.value) || 0;
+            
+            const rentInf = parseFloat(inputs.rentInflation.value) || 0;
+            const costsInf = parseFloat(inputs.costsInflation.value) || 0;
+            const valGrowth = parseFloat(inputs.valueGrowth.value) || 0;
+            const genInf = parseFloat(inputs.generalInflation.value) || 0;
+
+            inputs.priceDisplay.textContent = formatter.format(price);
+
+            const grossYield = price > 0 ? ((initialRent * 12) / price) * 100 : 0;
+            const totalInvestedCash = equity + initCosts;
+            outputs.yield.textContent = `${grossYield.toFixed(2)} %`;
+            outputs.totalCash.textContent = formatter.format(totalInvestedCash);
+
+            let mortgageAmount = price - equity;
+            if (mortgageAmount < 0) mortgageAmount = 0;
+
+            let balance = mortgageAmount;
+            let currentMonthlyRate = (initialRate / 100) / 12;
+            let currentPayment = pmt(currentMonthlyRate, totalYears * 12, balance);
+            
+            outputs.monthlyPayment.textContent = formatter.format(currentPayment);
+            
+            const labels = [];
+            const valNominalData = [];
+            const valRealData = [];
+            const mortgageData = [];
+            const equityData = [];
+            const cfData = [];
+            const cocData = [];
+
+            let breakEvenYear = null;
+            let firstYearCF = 0;
+
+            labels.push('Dnes');
+            valNominalData.push(price / 1000000);
+            valRealData.push(price / 1000000);
+            mortgageData.push(balance / 1000000);
+            equityData.push((price - balance) / 1000000);
+            cfData.push(0); 
+            cocData.push(0);
+
+            for (let y = 1; y <= totalYears; y++) {
+                labels.push(`Rok ${y}`);
+
+                if (y === fixationYears + 1) {
+                    currentMonthlyRate = (rateAfter / 100) / 12;
+                    let remainingMonths = (totalYears - y + 1) * 12;
+                    currentPayment = pmt(currentMonthlyRate, remainingMonths, balance);
+                    if (y === fixationYears + 1) {
+                        outputs.paymentAfter.textContent = `Po fixaci: ${formatter.format(currentPayment)}`;
+                    }
+                }
+
+                let yearlyInterest = 0;
+                let yearlyPrincipal = 0;
+                for (let m = 1; m <= 12; m++) {
+                    let interest = balance * currentMonthlyRate;
+                    let principal = currentPayment - interest;
+                    yearlyInterest += interest;
+                    yearlyPrincipal += principal;
+                    balance -= principal;
+                }
+                if (balance < 0) balance = 0;
+
+                let currentValNominal = price * Math.pow(1 + (valGrowth / 100), y);
+                let currentValReal = currentValNominal / Math.pow(1 + (genInf / 100), y);
+                
+                valNominalData.push(currentValNominal / 1000000);
+                valRealData.push(currentValReal / 1000000);
+                mortgageData.push(balance / 1000000);
+                equityData.push((currentValNominal - balance) / 1000000);
+
+                let yearlyRent = (initialRent * 12) * Math.pow(1 + (rentInf / 100), y - 1);
+                let effectiveYearlyRent = yearlyRent * (1 - (vacancyRate / 100));
+                let yearlyPropCosts = (initialPropCosts * 12) * Math.pow(1 + (costsInf / 100), y - 1);
+
+                let taxableIncome = effectiveYearlyRent - yearlyPropCosts - yearlyInterest;
+                let tax = 0;
+                if (taxableIncome > 0) {
+                    tax = taxableIncome * (taxRate / 100);
+                }
+
+                let yearlyCF = effectiveYearlyRent - yearlyPropCosts - (currentPayment * 12) - tax;
+                let monthlyCF = yearlyCF / 12;
+                
+                let yearlyCoC = totalInvestedCash > 0 ? (yearlyCF / totalInvestedCash) * 100 : 0;
+
+                cfData.push(monthlyCF);
+                cocData.push(yearlyCoC);
+
+                if (y === 1) {
+                    firstYearCF = monthlyCF;
+                }
+
+                if (breakEvenYear === null && monthlyCF > 0) {
+                    breakEvenYear = y;
+                }
+            }
+
+            const cocReturn = totalInvestedCash > 0 ? ((firstYearCF * 12) / totalInvestedCash) * 100 : 0;
+            outputs.coc.textContent = `${cocReturn.toFixed(2)} %`;
+            outputs.coc.className = cocReturn >= 0 ? "text-xl font-bold text-emerald-600" : "text-xl font-bold text-rose-600";
+
+            outputs.cashFlow.textContent = formatter.format(firstYearCF);
+            if (firstYearCF >= 0) {
+                outputs.cashFlow.className = "text-xl font-bold text-emerald-600 relative z-10";
+                outputs.cfBg.className = "absolute inset-0 opacity-20 bg-emerald-500";
+            } else {
+                outputs.cashFlow.className = "text-xl font-bold text-rose-600 relative z-10";
+                outputs.cfBg.className = "absolute inset-0 opacity-10 bg-rose-500";
+            }
+
+            if (breakEvenYear) {
+                outputs.breakEven.textContent = `Do plusu od ${breakEvenYear}. roku`;
+                outputs.breakEven.className = "text-[10px] font-medium text-emerald-600 mt-1 relative z-10";
+            } else if (firstYearCF >= 0) {
+                 outputs.breakEven.textContent = `V plusu hned od začátku`;
+                 outputs.breakEven.className = "text-[10px] font-medium text-emerald-600 mt-1 relative z-10";
+            } else {
+                outputs.breakEven.textContent = `V plusu nebude v rámci hypotéky`;
+                outputs.breakEven.className = "text-[10px] font-medium text-rose-500 mt-1 relative z-10";
+            }
+
+            if(fixationYears >= totalYears) outputs.paymentAfter.textContent = "Fixace po celou dobu";
+
+            updateCharts(labels, valNominalData, valRealData, mortgageData, equityData, cfData, cocData);
+        }
+
+        function updateCharts(labels, valNominal, valReal, mortgage, equity, cfData, cocData) {
+            const chartOptions = { responsive: true, maintainAspectRatio: false };
+
+            const ctxValue = document.getElementById('valueChart').getContext('2d');
+            if (valueChartInstance) {
+                valueChartInstance.data.labels = labels;
+                valueChartInstance.data.datasets[0].data = valNominal;
+                valueChartInstance.data.datasets[1].data = equity;
+                valueChartInstance.data.datasets[2].data = valReal;
+                valueChartInstance.data.datasets[3].data = mortgage;
+                valueChartInstance.update();
+            } else {
+                valueChartInstance = new Chart(ctxValue, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Nominální hodnota',
+                                data: valNominal,
+                                borderColor: '#94a3b8',
+                                borderWidth: 2,
+                                borderDash: [5, 5],
+                                pointRadius: 0,
+                                tension: 0.4
+                            },
+                            {
+                                label: 'Čisté jmění (Equity)',
+                                data: equity,
+                                borderColor: '#10b981',
+                                backgroundColor: 'rgba(16, 185, 129, 0.15)',
+                                fill: true,
+                                borderWidth: 2,
+                                pointRadius: 0,
+                                tension: 0.4
+                            },
+                            {
+                                label: 'Reálná hodnota (po inflaci)',
+                                data: valReal,
+                                borderColor: '#3b82f6',
+                                borderWidth: 2,
+                                pointRadius: 0,
+                                tension: 0.4,
+                                hidden: true
+                            },
+                            {
+                                label: 'Zůstatek hypotéky',
+                                data: mortgage,
+                                borderColor: '#ef4444',
+                                backgroundColor: 'rgba(239, 68, 68, 0.05)',
+                                fill: true,
+                                borderWidth: 2,
+                                pointRadius: 0,
+                                tension: 0.4
+                            }
+                        ]
+                    },
+                    options: {
+                        ...chartOptions,
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: {
+                            legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, font: {size: 11} } },
+                            tooltip: { callbacks: { label: function(c) { return c.dataset.label + ': ' + c.parsed.y.toFixed(2) + ' mil. Kč'; } } }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: { display: true, text: 'Miliony Kč', font: {size: 10} }
+                            },
+                            x: { ticks: { maxTicksLimit: 10 } }
+                        }
+                    }
+                });
+            }
+
+            const cfLabels = labels.slice(1);
+            const cfValues = cfData.slice(1);
+            const cocValues = cocData.slice(1);
+
+            const ctxCF = document.getElementById('cashflowChart').getContext('2d');
+            const pointColors = cfValues.map(val => val >= 0 ? '#10b981' : '#f43f5e');
+
+            if (cfChartInstance) {
+                cfChartInstance.data.labels = cfLabels;
+                cfChartInstance.data.datasets[0].data = [...cfValues];
+                cfChartInstance.data.datasets[0].backgroundColor = [...pointColors];
+                cfChartInstance.data.datasets[1].data = [...cocValues];
+                cfChartInstance.update('none'); 
+            } else {
+                cfChartInstance = new Chart(ctxCF, {
+                    data: {
+                        labels: cfLabels,
+                        datasets: [
+                            {
+                                type: 'bar',
+                                label: 'Měsíční Cash Flow (Kč)',
+                                data: cfValues,
+                                backgroundColor: pointColors,
+                                borderRadius: 4,
+                                yAxisID: 'y',
+                                order: 2
+                            },
+                            {
+                                type: 'line',
+                                label: 'Cash on Cash (% p.a.)',
+                                data: cocValues,
+                                borderColor: '#f59e0b',
+                                backgroundColor: '#f59e0b',
+                                borderWidth: 2,
+                                pointRadius: 3,
+                                yAxisID: 'y1',
+                                tension: 0.3,
+                                order: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        ...chartOptions,
+                        interaction: { mode: 'index', intersect: false },
+                        plugins: {
+                            legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, font: {size: 11} } },
+                            tooltip: { 
+                                callbacks: { 
+                                    label: function(c) { 
+                                        let val = c.dataset.yAxisID === 'y1' ? c.parsed.y.toFixed(2) + ' %' : formatter.format(c.parsed.y);
+                                        return c.dataset.label + ': ' + val; 
+                                    } 
+                                } 
+                            }
+                        },
+                        scales: {
+                            y: {
+                                type: 'linear',
+                                display: true,
+                                position: 'left',
+                                grid: { color: (c) => c.tick.value === 0 ? '#64748b' : '#e2e8f0', lineWidth: (c) => c.tick.value === 0 ? 2 : 1 },
+                                ticks: { callback: function(val) { return val + ' Kč'; } }
+                            },
+                            y1: {
+                                type: 'linear',
+                                display: true,
+                                position: 'right',
+                                grid: { drawOnChartArea: false },
+                                ticks: { callback: function(val) { return val.toFixed(1) + ' %'; } }
+                            },
+                            x: { ticks: { maxTicksLimit: 10 } }
+                        }
+                    }
+                });
+            }
+        }
+
+        calculate();
+    </script>
+</body>
+</html>
