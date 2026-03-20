@@ -33,7 +33,7 @@
         <div class="grid grid-cols-1 xl:grid-cols-12 gap-8">
             
             <!-- Levý panel: Vstupy -->
-            <div class="xl:col-span-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 h-fit max-h-[90vh] overflow-y-auto">
+            <div class="xl:col-span-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 h-fit xl:max-h-[90vh] xl:overflow-y-auto">
                 <h2 class="text-xl font-semibold mb-6 text-slate-800 border-b pb-2">Parametry investice</h2>
                 
                 <div class="space-y-6">
@@ -740,6 +740,19 @@
                 setTimeout(() => { btn.innerHTML = originalContent; btn.disabled = false; }, 3000);
             });
         });
+
+        // Oprava pro zasekávající se tooltips v grafech na mobilech
+        document.addEventListener('touchstart', function(e) {
+            if (e.target.tagName !== 'CANVAS') {
+                [valueChartInstance, cfChartInstance, breakdownChartInstance].forEach(chart => {
+                    if (chart) {
+                        chart.setActiveElements([]);
+                        chart.tooltip.setActiveElements([], {x: 0, y: 0});
+                        chart.update();
+                    }
+                });
+            }
+        }, {passive: true});
 
         // Úvodní výpočet při načtení
         calculate();
